@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BankAccountUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">BankOps</a> &gt; <a href="index.source.html" class="el_package">com.sys.bank.util</a> &gt; <span class="el_source">BankAccountUtil.java</span></div><h1>BankAccountUtil.java</h1><pre class="source lang-java linenums">package com.sys.bank.util;
+
+import com.sys.bank.entity.InterestRule;
+import com.sys.bank.entity.Transaction;
+
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+
+public class BankAccountUtil {
+    private String accountId;
+    private double balance;
+    private List&lt;Transaction&gt; transactions;
+    private int transactionCounter;
+
+<span class="fc" id="L19">    public BankAccountUtil(String accountId) {</span>
+<span class="fc" id="L20">        this.accountId = accountId;</span>
+<span class="fc" id="L21">        this.balance = 0.0;</span>
+<span class="fc" id="L22">        this.transactions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L23">        this.transactionCounter = 0;</span>
+<span class="fc" id="L24">    }</span>
+
+    public boolean addTransaction(String date, String type, double amount) {
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        if (amount &lt;= 0) {</span>
+<span class="nc" id="L28">            System.out.println(&quot;Amount must be greater than zero.&quot;);</span>
+<span class="nc" id="L29">            return false;</span>
+        }
+
+<span class="fc" id="L32">        type = type.toUpperCase();</span>
+<span class="pc bpc" id="L33" title="3 of 4 branches missed.">        if (!type.equals(&quot;D&quot;) &amp;&amp; !type.equals(&quot;W&quot;)) {</span>
+<span class="nc" id="L34">            System.out.println(&quot;Invalid transaction type. Use D for deposit, W for withdrawal.&quot;);</span>
+<span class="nc" id="L35">            return false;</span>
+        }
+
+<span class="pc bpc" id="L38" title="3 of 4 branches missed.">        if (type.equals(&quot;W&quot;) &amp;&amp; balance &lt; amount) {</span>
+<span class="nc" id="L39">            System.out.println(&quot;Insufficient balance for withdrawal.&quot;);</span>
+<span class="nc" id="L40">            return false;</span>
+        }
+
+<span class="fc" id="L43">        transactionCounter++;</span>
+<span class="fc" id="L44">        String transactionId = date + &quot;-&quot; + String.format(&quot;%02d&quot;, transactionCounter);</span>
+
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (type.equals(&quot;D&quot;)) {</span>
+<span class="fc" id="L47">            balance += amount;</span>
+        } else {
+<span class="nc" id="L49">            balance -= amount;</span>
+        }
+
+<span class="fc" id="L52">        transactions.add(new Transaction(date, transactionId, type, amount, balance));</span>
+<span class="fc" id="L53">        return true;</span>
+    }
+
+    public void printStatementForMonth(String flag, String yearMonth, List&lt;InterestRule&gt; interestRules) {
+<span class="fc" id="L57">        System.out.println(&quot;Account: &quot; + accountId);</span>
+<span class="fc" id="L58">        System.out.println(&quot;| Date     | Txn Id      | Type | Amount | Balance |&quot;);</span>
+<span class="fc" id="L59">        TreeMap&lt;String, Double&gt; eodBalances = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L60">        double lastBalance = 0.0;</span>
+
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (Transaction txn : transactions) {</span>
+            // if (txn.date.startsWith(yearMonth)) {
+<span class="fc" id="L64">            System.out.printf(&quot;| %s | %s | %s    | %.2f | %.2f | &quot;, txn.date, txn.transactionId, txn.type, txn.amount, txn.balance);</span>
+<span class="fc" id="L65">            lastBalance = txn.balance;</span>
+<span class="fc" id="L66">            eodBalances.put(txn.date, lastBalance);</span>
+            // }
+<span class="fc" id="L68">            System.out.println(&quot;&quot;);</span>
+<span class="fc" id="L69">        }</span>
+
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if(null!=flag &amp;&amp; flag.equals(&quot;P&quot;)) {</span>
+            // Interest calculation
+<span class="nc" id="L73">            double totalInterest = 0.0;</span>
+<span class="nc" id="L74">            totalInterest = calculateInterestForTransactions(transactions, interestRules);</span>
+            //double interestAccrued = totalInterest / 365;
+<span class="nc" id="L76">            lastBalance += totalInterest;</span>
+            // System.out.println(yearMonth+&quot; == &quot;+totalInterest+&quot;== &quot;+lastBalance);
+<span class="nc" id="L78">            System.out.printf(&quot;| %s30 |             | I    | %.2f | %.2f | &quot;, yearMonth, totalInterest, lastBalance);</span>
+<span class="nc" id="L79">            System.out.println(&quot;&quot;);</span>
+        }
+<span class="fc" id="L81">    }</span>
+
+    // Function to get interest periods for a transaction
+    public static Map&lt;LocalDate, Double&gt; getInterestPeriods(List&lt;InterestRule&gt; rules, LocalDate transactionDate, LocalDate endOfMonth) {
+<span class="nc" id="L85">        Map&lt;LocalDate, Double&gt; applicablePeriods = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L86">        LocalDate currentStartDate = transactionDate;</span>
+<span class="nc" id="L87">        double currentRate = 0.0;</span>
+
+        // Determine the applicable rate for the transaction date
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        for (InterestRule rule : rules) {</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (!transactionDate.isBefore(rule.date)) {</span>
+<span class="nc" id="L92">                currentRate = rule.rate;</span>
+            } else {
+                break;
+            }
+<span class="nc" id="L96">        }</span>
+
+        // Process interest rate changes within the month
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (InterestRule rule : rules) {</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">            if (rule.date.isAfter(transactionDate) &amp;&amp; rule.date.isBefore(endOfMonth.plusDays(1))) {</span>
+<span class="nc" id="L101">                applicablePeriods.put(currentStartDate, currentRate);</span>
+<span class="nc" id="L102">                currentStartDate = rule.date;</span>
+<span class="nc" id="L103">                currentRate = rule.rate;</span>
+            }
+<span class="nc" id="L105">        }</span>
+
+        // Apply final rate till the end of the month
+<span class="nc" id="L108">        applicablePeriods.put(currentStartDate, currentRate);</span>
+<span class="nc" id="L109">        return applicablePeriods;</span>
+    }
+
+    // Function to calculate interest for all transactions
+    public static double calculateInterestForTransactions(List&lt;Transaction&gt; transactions, List&lt;InterestRule&gt; rules) {
+        // Sort interest rules and transactions
+<span class="nc" id="L115">        rules.sort(Comparator.comparing(rule -&gt; rule.date));</span>
+<span class="nc" id="L116">        transactions.sort(Comparator.comparing(txn -&gt; txn.date));</span>
+
+        // Determine the month and last day of the month
+<span class="nc" id="L119">        int year = LocalDate.parse(transactions.get(0).date, DateTimeFormatter.ofPattern(&quot;yyyyMMdd&quot;)).getYear();</span>
+<span class="nc" id="L120">        int month = LocalDate.parse(transactions.get(0).date, DateTimeFormatter.ofPattern(&quot;yyyyMMdd&quot;)).getMonthValue();</span>
+<span class="nc" id="L121">        LocalDate endOfMonth = YearMonth.of(year, month).atEndOfMonth();</span>
+
+<span class="nc" id="L123">        double totalInterest = 0.0;</span>
+<span class="nc" id="L124">        DecimalFormat df = new DecimalFormat(&quot;#.##&quot;);</span>
+
+        // Iterate through transactions and process interest
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        for (int i = 0; i &lt; transactions.size(); i++) {</span>
+<span class="nc" id="L128">            Transaction txn = transactions.get(i);</span>
+
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            LocalDate nextTxnDate = (i &lt; transactions.size() - 1) ? LocalDate.parse(transactions.get(i + 1).date, DateTimeFormatter.ofPattern(&quot;yyyyMMdd&quot;)) : endOfMonth.plusDays(1);</span>
+
+
+<span class="nc" id="L133">            Map&lt;LocalDate, Double&gt; interestPeriods = getInterestPeriods(rules, LocalDate.parse(txn.date, DateTimeFormatter.ofPattern(&quot;yyyyMMdd&quot;)), endOfMonth);</span>
+
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            for (Map.Entry&lt;LocalDate, Double&gt; entry : interestPeriods.entrySet()) {</span>
+<span class="nc" id="L136">                LocalDate periodStart = entry.getKey();</span>
+<span class="nc" id="L137">                double rate = entry.getValue();</span>
+
+                // Determine period end date (either next rule date, next transaction, or end of month)
+<span class="nc" id="L140">                LocalDate periodEnd = interestPeriods.keySet().stream()</span>
+<span class="nc" id="L141">                        .filter(d -&gt; d.isAfter(periodStart))</span>
+<span class="nc" id="L142">                        .findFirst()</span>
+<span class="nc" id="L143">                        .orElse(nextTxnDate);</span>
+
+<span class="nc" id="L145">                long days = ChronoUnit.DAYS.between(periodStart, periodEnd);</span>
+<span class="nc" id="L146">                double periodInterest = (txn.amount * rate * days) / (100); // Approximate 30-day interest</span>
+
+//                System.out.println(&quot;Transaction Date: &quot; + txn.date + &quot;, From: &quot; + periodStart + &quot; To: &quot; + periodEnd.minusDays(1) +
+//                        &quot;, Days: &quot; + days + &quot;, Interest Rate: &quot; + rate + &quot;%, Interest: $&quot; + periodInterest);
+
+<span class="nc" id="L151">                totalInterest += periodInterest;</span>
+<span class="nc" id="L152">            }</span>
+        }
+
+<span class="nc" id="L155">        double totInt = Double.valueOf(df.format(totalInterest/365));</span>
+        //System.out.println(&quot;\nTotal Interest for the month: $&quot; + totInt);
+<span class="nc" id="L157">        return totInt;</span>
+    }
+
+    // Method to be tested
+    public static String getGreeting(String name) {
+<span class="nc" id="L162">        return &quot;Hello, &quot; + name + &quot;!&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
